@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spendly">
+<meta name="theme-color" content="#0a0a0a">
+<title>Spendly — Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1c1c1c;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ede8;
+  --muted: #888;
+  --accent: #c8f061;
+  --accent-dim: rgba(200,240,97,0.12);
+  --red: #ff5f5f;
+  --red-dim: rgba(255,95,95,0.12);
+  --green: #4ddb8e;
+  --green-dim: rgba(77,219,142,0.12);
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-display);overscroll-behavior:none}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh}
+
+/* Header */
+.header{padding:calc(var(--safe-top) + 16px) 20px 0;flex-shrink:0}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo{font-size:22px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}
+.logo span{color:var(--accent)}
+.month-badge{font-family:var(--font-mono);font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:20px}
+
+/* Summary cards */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.summary-main{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+.summary-main .s-label{font-size:11px;color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.summary-main .s-val{font-size:32px;font-weight:700;letter-spacing:-1px}
+.summary-main .s-val.pos{color:var(--green)}
+.summary-main .s-val.neg{color:var(--red)}
+.summary-sub{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.summary-sub .s-label{font-size:10px;color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.summary-sub .s-val{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.summary-sub .s-val.income{color:var(--green)}
+.summary-sub .s-val.spent{color:var(--red)}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;padding:0 20px;margin:14px 0 0;flex-shrink:0}
+.tab{flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font-display);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--accent);color:#0a0a0a;border-color:var(--accent)}
+
+/* Scrollable content */
+.content{flex:1;overflow-y:auto;padding:14px 20px;padding-bottom:calc(var(--safe-bottom) + 80px)}
+.content::-webkit-scrollbar{display:none}
+
+/* Section label */
+.section-label{font-size:10px;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;margin-top:18px}
+.section-label:first-child{margin-top:0}
+
+/* Transaction list */
+.tx-list{display:flex;flex-direction:column;gap:6px}
+.tx-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:border-color .15s}
+.tx-item:active{border-color:var(--border2)}
+.tx-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tx-body{flex:1;min-width:0}
+.tx-desc{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-meta{font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-top:2px}
+.tx-right{text-align:right;flex-shrink:0}
+.tx-amt{font-size:15px;font-weight:700;font-family:var(--font-mono)}
+.tx-amt.pos{color:var(--green)}
+.tx-amt.neg{color:var(--red)}
+.tx-del{display:block;font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--font-mono);margin-top:2px;text-align:right;padding:0}
+.tx-del:active{color:var(--red)}
+.empty-state{text-align:center;padding:48px 0;color:var(--muted);font-size:13px;font-family:var(--font-mono)}
+
+/* Breakdown bars */
+.breakdown{display:flex;flex-direction:column;gap:10px}
+.breakdown-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.breakdown-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.breakdown-cat{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.breakdown-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.breakdown-amt{font-size:13px;font-family:var(--font-mono);color:var(--muted)}
+.bar-track{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.breakdown-pct{font-size:10px;font-family:var(--font-mono);color:var(--muted);margin-top:5px}
+
+/* Bottom sheet / Add form */
+.fab{position:fixed;bottom:calc(var(--safe-bottom) + 24px);right:20px;width:56px;height:56px;border-radius:18px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(200,240,97,0.3);transition:transform .15s}
+.fab:active{transform:scale(.93)}
+.fab svg{width:24px;height:24px}
+
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10;backdrop-filter:blur(2px)}
+.sheet-overlay.open{display:block}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--surface);border-radius:24px 24px 0 0;border:1px solid var(--border2);border-bottom:none;z-index:11;padding:0 20px calc(var(--safe-bottom) + 24px);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.sheet.open{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 20px}
+.sheet-title{font-size:18px;font-weight:700;margin-bottom:20px}
+.sheet-tabs{display:flex;gap:6px;margin-bottom:18px}
+.sheet-tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font-display);font-size:13px;font-weight:600;cursor:pointer}
+.sheet-tab.active{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:var(--font-display);font-size:15px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.field input:focus,.field select:focus{border-color:var(--border2)}
+.field input::placeholder{color:var(--muted)}
+.submit-btn{width:100%;padding:15px;border-radius:14px;background:var(--accent);border:none;color:#0a0a0a;font-family:var(--font-display);font-size:16px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .15s}
+.submit-btn:active{opacity:.85}
+
+/* Filter row */
+.filter-row{display:flex;gap:8px;margin-bottom:14px}
+.filter-row select{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:var(--font-display);font-size:12px;outline:none;-webkit-appearance:none;appearance:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">Spend<span>.</span>ly</div>
+    <div class="month-badge" id="month-badge"></div>
+  </div>
+  <div class="summary">
+    <div class="summary-main">
+      <div>
+        <div class="s-label">Balance</div>
+        <div class="s-val" id="s-balance">AED 0</div>
+      </div>
+    </div>
+    <div class="summary-sub">
+      <div class="s-label">Income</div>
+      <div class="s-val income" id="s-income">0</div>
+    </div>
+    <div class="summary-sub">
+      <div class="s-label">Spent</div>
+      <div class="s-val spent" id="s-spent">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('txns',this)">Transactions</button>
+  <button class="tab" onclick="switchTab('breakdown',this)">Categories</button>
+</div>
+
+<div class="content" id="content-txns">
+  <div class="filter-row">
+    <select id="f-type" onchange="renderTxns()">
+      <option value="all">All types</option>
+      <option value="income">Income</option>
+      <option value="expense">Expenses</option>
+    </select>
+    <select id="f-cat" onchange="renderTxns()">
+      <option value="all">All categories</option>
+      <option>Food</option><option>Petrol</option><option>Bills</option>
+      <option>Parking</option><option>Debt</option><option>Groceries</option>
+      <option>Transport</option><option>Health</option><option>Shopping</option><option>Other</option>
+    </select>
+  </div>
+  <div class="tx-list" id="tx-list"></div>
+</div>
+
+<div class="content" id="content-breakdown" style="display:none">
+  <div class="breakdown" id="breakdown"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openSheet()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<!-- Bottom Sheet -->
+<div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Add entry</div>
+  <div class="sheet-tabs">
+    <button class="sheet-tab active" onclick="switchForm('expense',this)">Expense</button>
+    <button class="sheet-tab" onclick="switchForm('income',this)">Income</button>
+  </div>
+
+  <div id="form-expense">
+    <div class="field"><label>Description</label><input type="text" id="e-desc" placeholder="e.g. Lunch at cafe"></div>
+    <div class="field"><label>Category</label>
+      <select id="e-cat">
+        <option>Food</option><option>Petrol</option><option>Bills</option>
+        <option>Parking</option><option>Debt</option><option>Groceries</option>
+        <option>Transport</option><option>Health</option><option>Shopping</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Amount (AED)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    <button class="submit-btn" onclick="addExpense()">Log expense</button>
+  </div>
+
+  <div id="form-income" style="display:none">
+    <div class="field"><label>Source</label><input type="text" id="i-desc" placeholder="e.g. Salary, Freelance"></div>
+    <div class="field"><label>Amount (AED)</label><input type="number" id="i-amt" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    <button class="submit-btn" onclick="addIncome()">Log income</button>
+  </div>
+</div>
+
+<script>
+const CAT_COLORS={Food:'#4ddb8e',Petrol:'#f5a623',Bills:'#5b9cf6',Parking:'#a0a0a0',Debt:'#ff5f5f',Groceries:'#74d680',Transport:'#b57bee',Health:'#f472b6',Shopping:'#fb923c',Other:'#6b7280',Income:'#4ddb8e'};
+const CAT_EMOJI={Food:'🍽',Petrol:'⛽',Bills:'🧾',Parking:'🅿',Debt:'💳',Groceries:'🛒',Transport:'🚗',Health:'💊',Shopping:'🛍',Other:'•',Income:'💰'};
+
+let data=[];
+let activeTab='txns';
+let formType='expense';
+
+try{const s=localStorage.getItem('spendly_v1');if(s)data=JSON.parse(s);}catch(e){}
+
+function save(){try{localStorage.setItem('spendly_v1',JSON.stringify(data));}catch(e){}}
+function fmt(n){return'AED '+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function fmtShort(n){if(n>=1000)return'AED '+(n/1000).toFixed(1)+'k';return'AED '+n.toFixed(0);}
+function today(){return new Date().toISOString().slice(0,10);}
+function monthName(){return new Date().toLocaleDateString('en-AE',{month:'long',year:'numeric'});}
+
+function openSheet(){
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+function switchForm(type,btn){
+  formType=type;
+  document.getElementById('form-expense').style.display=type==='expense'?'block':'none';
+  document.getElementById('form-income').style.display=type==='income'?'block':'none';
+  document.querySelectorAll('.sheet-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+function switchTab(tab,btn){
+  activeTab=tab;
+  document.getElementById('content-txns').style.display=tab==='txns'?'block':'none';
+  document.getElementById('content-breakdown').style.display=tab==='breakdown'?'block':'none';
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='breakdown')renderBreakdown();
+}
+
+function addExpense(){
+  const desc=document.getElementById('e-desc').value.trim()||'Expense';
+  const cat=document.getElementById('e-cat').value;
+  const amt=parseFloat(document.getElementById('e-amt').value);
+  if(!amt||amt<=0)return;
+  data.push({id:Date.now(),type:'expense',desc,cat,amount:amt,date:today()});
+  save();render();closeSheet();
+  document.getElementById('e-desc').value='';
+  document.getElementById('e-amt').value='';
+}
+function addIncome(){
+  const desc=document.getElementById('i-desc').value.trim()||'Income';
+  const amt=parseFloat(document.getElementById('i-amt').value);
+  if(!amt||amt<=0)return;
+  data.push({id:Date.now(),type:'income',desc,cat:'Income',amount:amt,date:today()});
+  save();render();closeSheet();
+  document.getElementById('i-desc').value='';
+  document.getElementById('i-amt').value='';
+}
+function deleteEntry(id){if(confirm('Delete this entry?')){data=data.filter(d=>d.id!==id);save();render();}}
+
+function render(){
+  document.getElementById('month-badge').textContent=monthName();
+  const inc=data.filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0);
+  const spent=data.filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0);
+  const bal=inc-spent;
+  const bEl=document.getElementById('s-balance');
+  bEl.textContent=fmt(bal);
+  bEl.className='s-val '+(bal>=0?'pos':'neg');
+  document.getElementById('s-income').textContent=fmtShort(inc);
+  document.getElementById('s-spent').textContent=fmtShort(spent);
+  renderTxns();
+  if(activeTab==='breakdown')renderBreakdown();
+}
+
+function renderTxns(){
+  const type=document.getElementById('f-type').value;
+  const cat=document.getElementById('f-cat').value;
+  let rows=[...data].reverse();
+  if(type!=='all')rows=rows.filter(d=>d.type===type);
+  if(cat!=='all')rows=rows.filter(d=>d.cat===cat);
+  const el=document.getElementById('tx-list');
+  if(!rows.length){el.innerHTML='<div class="empty-state">No entries yet.<br>Tap + to add one.</div>';return;}
+
+  let html='';let lastDate='';
+  rows.forEach(d=>{
+    if(d.date!==lastDate){
+      const label=d.date===today()?'Today':new Date(d.date+'T00:00:00').toLocaleDateString('en-AE',{weekday:'short',month:'short',day:'numeric'});
+      html+=`<div class="section-label">${label}</div>`;
+      lastDate=d.date;
+    }
+    const col=CAT_COLORS[d.cat]||'#888';
+    const emoji=CAT_EMOJI[d.cat]||'•';
+    const sign=d.type==='income'?'+':'-';
+    const amtCls=d.type==='income'?'pos':'neg';
+    html+=`<div class="tx-item">
+      <div class="tx-dot" style="background:${col}22;color:${col};font-size:18px">${emoji}</div>
+      <div class="tx-body">
+        <div class="tx-desc">${d.desc}</div>
+        <div class="tx-meta">${d.cat}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amt ${amtCls}">${sign}${fmt(d.amount)}</div>
+        <button class="tx-del" onclick="deleteEntry(${d.id})">remove</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function renderBreakdown(){
+  const expenses=data.filter(d=>d.type==='expense');
+  const el=document.getElementById('breakdown');
+  if(!expenses.length){el.innerHTML='<div class="empty-state">No expenses yet.</div>';return;}
+  const totals={};const totalSpent=expenses.reduce((s,d)=>s+d.amount,0);
+  expenses.forEach(d=>{totals[d.cat]=(totals[d.cat]||0)+d.amount;});
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0][1];
+  el.innerHTML=sorted.map(([cat,amt])=>{
+    const pct=Math.round((amt/totalSpent)*100);
+    const barPct=Math.round((amt/max)*100);
+    const col=CAT_COLORS[cat]||'#888';
+    const emoji=CAT_EMOJI[cat]||'•';
+    return`<div class="breakdown-row">
+      <div class="breakdown-top">
+        <div class="breakdown-cat"><div class="breakdown-cat-dot" style="background:${col}"></div>${emoji} ${cat}</div>
+        <div class="breakdown-amt">${fmt(amt)}</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${barPct}%;background:${col}"></div></div>
+      <div class="breakdown-pct">${pct}% of total spending</div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+render();
+</script>
+</body>
+</html>
